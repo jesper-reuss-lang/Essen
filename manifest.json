@@ -1,0 +1,21 @@
+{
+  "name": "Einkaufsplaner",
+  "short_name": "Einkauf",
+  "description": "Gerichte planen, Vorrat abgleichen und clever einkaufen.",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "./Einkaufsplaner.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2ee",
+  "theme_color": "#2e7d46",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

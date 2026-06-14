@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Einkaufsplaner">
+  <rect width="512" height="512" fill="#2e7d46"/>
+  <g fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 168 h34 l46 160 h146 l38 -118 h-202"/>
+  </g>
+  <circle cx="246" cy="372" r="18" fill="#ffffff"/>
+  <circle cx="356" cy="372" r="18" fill="#ffffff"/>
+  <path d="M300 150 v70 M270 165 h60" fill="none" stroke="#bfe6cd" stroke-width="20" stroke-linecap="round"/>
+</svg>
