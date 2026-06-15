@@ -233,6 +233,14 @@ function num(v){if(typeof v==='number')return v;if(v==null||v==='')return 0;retu
 function round(n){return Math.round((n+Number.EPSILON)*100)/100;}
 function fmtNum(n){return Number(n).toLocaleString('de-DE',{maximumFractionDigits:2});}
 function normName(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function matchKey(s){
+  let x=(s||'').toLowerCase().replace(/\([^)]*\)/g,' ');
+  x=x.replace(/ß/g,'ss').replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u');
+  x=x.replace(/\b(frische?[rsn]?|getrocknete?[rsn]?|gemahlene?[rsn]?|geriebene?[rsn]?|gehackte?[rsn]?|gerebelte?[rsn]?|gerostete?[rsn]?|gesalzene?[rsn]?|geschnittene?[rsn]?|gewurfelte?[rsn]?|gestiftelte?[rsn]?|abgetropfte?[rsn]?|blanchierte?[rsn]?|geschalte?[rsn]?|rote[rsn]?|grune[rsn]?|gelbe[rsn]?|schwarze[rsn]?|weisse[rsn]?|braune[rsn]?|feine[rsn]?|grobe[rsn]?|kleine[rsn]?|grosse[rsn]?|ganze[rsn]?|natur|edelsuess|rosenscharf|konserviert|tiefkuhl|bio)\b/g,' ');
+  x=x.replace(/[^a-z]/g,'');
+  x=x.replace(/(blattern|blatter|blatt)$/,'');
+  return x;
+}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function pad(n){return String(n).padStart(2,'0');}
 function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -255,22 +263,23 @@ function exampleData(){
   const rSalat={id:uid(),name:'Griechischer Salat',app:'Instagram @foodie',servings:2,link:'',photo:'',ingredients:[
     ing('Tomaten',4,'Stück'),ing('Gurke',1,'Stück'),ing('Feta',200,'g'),ing('Oliven',100,'g'),
     ing('Zwiebel',1,'Stück'),ing('Olivenöl',3,'EL')]};
+  const rPizza={id:uid(),name:'TK-Pizza Salami',app:'Tiefkühltruhe',type:'fertig',stock:2,category:'Tiefkühl',servings:1,link:'',photo:'',ingredients:[]};
   const t=new Date();
   const wk={};
   wk[ymd(t)]=[{id:uid(),recipeId:rBolo.id,cooked:false,portions:rBolo.servings}];
   wk[ymd(addDays(t,1))]=[{id:uid(),recipeId:rCurry.id,cooked:false,portions:rCurry.servings},{id:uid(),recipeId:rSalat.id,cooked:false,portions:rSalat.servings}];
   return {
     v:2,
-    recipes:[rBolo,rCurry,rEi,rSalat],
+    recipes:[rBolo,rCurry,rEi,rSalat,rPizza],
     inventory:[
       {id:uid(),name:'Spaghetti',amount:500,unit:'g',category:'Vorratsschrank',always:false},
       {id:uid(),name:'Reis',amount:1,unit:'kg',category:'Vorratsschrank',always:false},
-      {id:uid(),name:'Zwiebel',amount:3,unit:'Stück',category:'Obst & Gemüse',always:false},
+      {id:uid(),name:'Zwiebel',mode:'status',have:true,category:'Obst & Gemüse',always:false},
       {id:uid(),name:'Knoblauch',amount:5,unit:'Zehe',category:'Obst & Gemüse',always:false},
       {id:uid(),name:'Eier',amount:6,unit:'Stück',category:'Milchprodukte & Eier',always:false},
       {id:uid(),name:'Butter',amount:250,unit:'g',category:'Milchprodukte & Eier',always:false},
       {id:uid(),name:'Brot',amount:8,unit:'Scheibe',category:'Brot & Backwaren',always:false},
-      {id:uid(),name:'Tomaten',amount:2,unit:'Stück',category:'Obst & Gemüse',always:false},
+      {id:uid(),name:'Tomaten',mode:'status',have:true,category:'Obst & Gemüse',always:false},
       {id:uid(),name:'Salz',amount:0,unit:'',category:'Vorratsschrank',always:true},
       {id:uid(),name:'Olivenöl',amount:0,unit:'',category:'Vorratsschrank',always:true}
     ],
@@ -285,12 +294,17 @@ const KEY='einkaufsplaner_v2', KEY1='einkaufsplaner_v1';
 let DB=loadDB();
 let tab='gerichte';
 let editing=null;
+let ivEdit=null;
 let actId=null, actPortions=2;
 
 function normalizeDB(d){
   d.v=2; d.recipes=d.recipes||[]; d.inventory=d.inventory||[]; d.shopping=d.shopping||[]; d.week=d.week||{}; d.ui=d.ui||{};
-  d.recipes.forEach(r=>{r.id=r.id||uid();r.app=r.app||'';r.link=r.link||'';r.photo=r.photo||'';r.servings=r.servings||2;r.ingredients=r.ingredients||[];});
-  d.inventory.forEach(i=>{i.id=i.id||uid();if(typeof i.always!=='boolean')i.always=false;});
+  d.recipes.forEach(r=>{r.id=r.id||uid();r.app=r.app||'';r.link=r.link||'';r.photo=r.photo||'';r.servings=r.servings||2;r.ingredients=r.ingredients||[];
+    r.type=(r.type==='fertig')?'fertig':'rezept';
+    if(r.type==='fertig'){r.stock=Math.max(0,Math.round(num(r.stock))||0);r.category=r.category||guessCategory(r.name);r.servings=1;r.ingredients=[];}});
+  d.inventory.forEach(i=>{i.id=i.id||uid();if(typeof i.always!=='boolean')i.always=false;
+    if(i.mode!=='status')i.mode='menge';
+    if(i.mode==='status'){i.always=false;if(typeof i.have!=='boolean')i.have=true;}});
   d.shopping.forEach(s=>{s.id=s.id||uid();});
   for(const k in d.week){(d.week[k]||[]).forEach(e=>{e.id=e.id||uid();if(!e.portions){const r=d.recipes.find(x=>x.id===e.recipeId);e.portions=(r&&r.servings)||2;}});}
   return d;
@@ -307,21 +321,26 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){if(e&
 function invIndex(){
   const map={},always=new Set();
   for(const it of DB.inventory){
-    if(it.always){always.add(normName(it.name));continue;}
+    if(it.always){always.add(matchKey(it.name));continue;}
+    if(it.mode==='status'){if(it.have)always.add(matchKey(it.name));continue;}
     const {dim,base}=toBase(it.amount,it.unit);
-    const k=normName(it.name)+'|'+dim; map[k]=(map[k]||0)+base;
+    const k=matchKey(it.name)+'|'+dim; map[k]=(map[k]||0)+base;
   }
   return {map,always};
 }
 function recipeStatus(r,factor){
   factor=factor||1;
+  if(r.type==='fertig'){
+    const need=Math.max(1,Math.round(factor)); const have=r.stock||0; const ok=have>=need;
+    return {cookable:ok,missing:ok?[]:[{name:r.name,dim:'count',base:need-have,label:'Stück',category:r.category||'Tiefkühl'}],total:1,fertig:true};
+  }
   const {map,always}=invIndex(); const missing=[];
   for(const ing of r.ingredients){
     if(!ing.name||!ing.name.trim())continue;
-    if(always.has(normName(ing.name)))continue;
+    if(always.has(matchKey(ing.name)))continue;
     const tb=toBase(ing.amount,ing.unit); const dim=tb.dim, base=tb.base*factor;
     if(base<=0)continue;
-    const have=map[normName(ing.name)+'|'+dim]||0;
+    const have=map[matchKey(ing.name)+'|'+dim]||0;
     if(have+1e-9>=base)continue;
     missing.push({name:ing.name.trim(),dim,base:base-have,label:(ing.unit||'').trim(),category:ing.category||guessCategory(ing.name)});
   }
@@ -330,10 +349,10 @@ function recipeStatus(r,factor){
 
 /* ===================== Einkaufsliste-Logik ===================== */
 function shopOnList(nname,dim){ // Menge dieses Artikels bereits auf der Liste (Basis)
-  let s=0; for(const it of DB.shopping) if(normName(it.name)===nname&&it.dim===dim) s+=it.base; return s;
+  let s=0; for(const it of DB.shopping) if(matchKey(it.name)===nname&&it.dim===dim) s+=it.base; return s;
 }
 function mergeShopping(name,dim,base,label,category){
-  const ex=DB.shopping.find(it=>normName(it.name)===normName(name)&&it.dim===dim);
+  const ex=DB.shopping.find(it=>matchKey(it.name)===matchKey(name)&&it.dim===dim);
   if(ex) ex.base+=base;
   else DB.shopping.push({id:uid(),name:name.trim(),dim,base,label:(label||'').trim(),category:category||guessCategory(name)});
 }
@@ -343,10 +362,10 @@ function addRecipeToShopping(recipeId,factor){
   const {map,always}=invIndex(); let added=0;
   for(const ing of r.ingredients){
     if(!ing.name||!ing.name.trim())continue;
-    if(always.has(normName(ing.name)))continue;
+    if(always.has(matchKey(ing.name)))continue;
     const tb=toBase(ing.amount,ing.unit); const dim=tb.dim, base=tb.base*factor; if(base<=0)continue;
-    const have=map[normName(ing.name)+'|'+dim]||0;
-    const onList=shopOnList(normName(ing.name),dim);
+    const have=map[matchKey(ing.name)+'|'+dim]||0;
+    const onList=shopOnList(matchKey(ing.name),dim);
     const avail=Math.max(0,have-onList);
     const miss=base-avail;
     if(miss>0.0001){ mergeShopping(ing.name,dim,miss,ing.unit,ing.category||guessCategory(ing.name)); added++; }
@@ -354,12 +373,12 @@ function addRecipeToShopping(recipeId,factor){
   return added;
 }
 function addToInventory(name,dim,base,label,category){
-  const ex=DB.inventory.find(x=>!x.always&&normName(x.name)===normName(name)&&toBase(x.amount,x.unit).dim===dim);
+  const ex=DB.inventory.find(x=>!x.always&&x.mode!=='status'&&matchKey(x.name)===matchKey(name)&&toBase(x.amount,x.unit).dim===dim);
   if(ex){const cur=toBase(ex.amount,ex.unit).base+base;const nf=formatFromBase(dim,cur,ex.unit||label);ex.amount=nf.amount;ex.unit=nf.unit;}
   else{const f=formatFromBase(dim,base,label);DB.inventory.push({id:uid(),name:name.trim(),amount:f.amount,unit:f.unit,category:category||guessCategory(name),always:false});}
 }
 function subtractFromInventory(nname,dim,base){
-  const ex=DB.inventory.find(x=>!x.always&&normName(x.name)===nname&&toBase(x.amount,x.unit).dim===dim);
+  const ex=DB.inventory.find(x=>!x.always&&x.mode!=='status'&&matchKey(x.name)===nname&&toBase(x.amount,x.unit).dim===dim);
   if(!ex)return;
   const left=toBase(ex.amount,ex.unit).base-base;
   if(left<=0.0001) DB.inventory=DB.inventory.filter(x=>x.id!==ex.id);
@@ -368,12 +387,13 @@ function subtractFromInventory(nname,dim,base){
 function cookRecipe(recipeId,factor){
   factor=factor||1;
   const r=DB.recipes.find(x=>x.id===recipeId); if(!r)return;
+  if(r.type==='fertig'){const n=Math.max(1,Math.round(factor));r.stock=Math.max(0,(r.stock||0)-n);return;}
   const {always}=invIndex();
   for(const ing of r.ingredients){
     if(!ing.name||!ing.name.trim())continue;
-    if(always.has(normName(ing.name)))continue;
+    if(always.has(matchKey(ing.name)))continue;
     const tb=toBase(ing.amount,ing.unit); const dim=tb.dim, base=tb.base*factor; if(base<=0)continue;
-    subtractFromInventory(normName(ing.name),dim,base);
+    subtractFromInventory(matchKey(ing.name),dim,base);
   }
 }
 
@@ -411,6 +431,7 @@ function viewGerichte(){
   return h;
 }
 function recipeCard(r,cookable,st){
+  if(r.type==='fertig')return fertigCard(r,cookable);
   let h='<div class="rcard '+(cookable?'ok':'no')+'" data-action="recipe-actions" data-id="'+r.id+'"><div class="rmain">';
   if(r.photo)h+='<img class="rthumb" src="'+esc(r.photo)+'" alt="" />';
   h+='<div class="grow"><div class="rname">'+esc(r.name)+'</div>';
@@ -420,6 +441,21 @@ function recipeCard(r,cookable,st){
   else h+='<div class="rstat no">'+st.missing.length+' von '+st.total+' Zutaten fehlen</div>';
   if(!cookable&&st.missing.length){h+='<div class="chiprow">'+st.missing.slice(0,8).map(m=>'<span class="chip miss">'+esc(m.name)+'</span>').join('')+(st.missing.length>8?'<span class="chip miss">+'+(st.missing.length-8)+'</span>':'')+'</div>';}
   if(r.link)h+='<button class="linkbtn link" data-action="open-link" data-url="'+esc(r.link)+'">🔗 Rezept öffnen</button>';
+  h+='</div><div class="rcard-actions">';
+  h+='<button class="linkbtn" data-action="edit-recipe" data-id="'+r.id+'" title="Bearbeiten">✏️</button>';
+  h+='<button class="linkbtn" data-action="delete-recipe" data-id="'+r.id+'" title="Löschen">🗑️</button>';
+  h+='</div></div></div>';
+  return h;
+}
+function fertigCard(r,cookable){
+  let h='<div class="rcard '+(cookable?'ok':'no')+'" data-action="recipe-actions" data-id="'+r.id+'"><div class="rmain">';
+  if(r.photo)h+='<img class="rthumb" src="'+esc(r.photo)+'" alt="" />';
+  h+='<div class="grow"><div class="rname">'+esc(r.name)+' <span class="chip" style="background:#2f6fd0;color:#fff">🧊 TK/Fertig</span></div>';
+  if(r.app)h+='<div class="rapp">📖 '+esc(r.app)+'</div>';
+  if(cookable)h+='<div class="rstat ok">✓ '+(r.stock||0)+' vorrätig – sofort essbar</div>';
+  else h+='<div class="rstat no">leer – nachkaufen</div>';
+  h+='<div class="row" style="margin-top:7px"><span class="miniport"><button data-action="stock-dec" data-id="'+r.id+'">−</button><span class="v">'+(r.stock||0)+' Stück</span><button data-action="stock-inc" data-id="'+r.id+'">+</button></span></div>';
+  if(r.link)h+='<button class="linkbtn link" data-action="open-link" data-url="'+esc(r.link)+'">🔗 Öffnen</button>';
   h+='</div><div class="rcard-actions">';
   h+='<button class="linkbtn" data-action="edit-recipe" data-id="'+r.id+'" title="Bearbeiten">✏️</button>';
   h+='<button class="linkbtn" data-action="delete-recipe" data-id="'+r.id+'" title="Löschen">🗑️</button>';
@@ -504,6 +540,13 @@ function viewVorrat(){
     const g=groups[cat]; if(!g||!g.length)continue;
     h+='<div class="card"><div class="cat-h" style="margin-top:0">'+CAT_ICON[cat]+' '+cat+'</div>';
     for(const it of g){
+      if(it.mode==='status'){
+        const pill=it.have?'<span class="pill" style="background:var(--accent-soft);color:var(--accent-d);border-color:var(--accent-soft)">✅ vorhanden</span>':'<span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft)">🛒 nachkaufen</span>';
+        h+='<div class="item"><div class="grow" data-action="edit-inventory" data-id="'+it.id+'"><div class="name">'+esc(it.name)+'</div><div class="meta">'+pill+'</div></div>'
+          +'<button class="btn '+(it.have?'ghost':'soft')+' sm" data-action="status-toggle" data-id="'+it.id+'" style="width:auto;min-height:34px;padding:6px 10px">'+(it.have?'auf nachkaufen':'hab ich')+'</button>'
+          +'<button class="linkbtn" data-action="delete-inventory" data-id="'+it.id+'" title="Löschen">🗑️</button></div>';
+        continue;
+      }
       const qty=it.always?'<span class="pill" style="background:var(--accent-soft);color:var(--accent-d);border-color:var(--accent-soft)">immer vorhanden</span>':esc(fmtNum(it.amount)+(it.unit?' '+it.unit:''));
       h+='<div class="item"><div class="grow" data-action="edit-inventory" data-id="'+it.id+'"><div class="name">'+esc(it.name)+'</div><div class="meta">'+qty+'</div></div>'
         +'<button class="linkbtn" data-action="toggle-always" data-id="'+it.id+'" title="immer vorhanden">'+(it.always?'⭐':'☆')+'</button>'
@@ -526,12 +569,13 @@ function closeSheet(){document.getElementById('modalRoot').classList.remove('sho
 
 function openRecipeModal(id){
   const r=id?DB.recipes.find(x=>x.id===id):null;
-  editing=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',app:'',servings:2,link:'',photo:'',ingredients:[{name:'',amount:'',unit:'',category:'Sonstiges'}]};
+  editing=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',app:'',type:'rezept',stock:0,category:'Tiefkühl',servings:2,link:'',photo:'',ingredients:[{name:'',amount:'',unit:'',category:'Sonstiges'}]};
   renderRecipeModal();
 }
 function renderRecipeModal(){
+  const isF=editing.type==='fertig';
   let rows='';
-  editing.ingredients.forEach((ing,i)=>{
+  if(!isF) editing.ingredients.forEach((ing,i)=>{
     rows+='<div class="ingrow">'
       +'<input data-fld="name" data-i="'+i+'" placeholder="Zutat" value="'+esc(ing.name)+'" />'
       +'<input data-fld="amount" data-i="'+i+'" inputmode="decimal" placeholder="Menge" value="'+esc(ing.amount)+'" />'
@@ -539,21 +583,30 @@ function renderRecipeModal(){
       +'<button class="del" data-action="remove-ing" data-i="'+i+'">✕</button>'
       +'<div class="ingcat"><select data-fld="category" data-i="'+i+'">'+CATEGORIES.map(c=>'<option value="'+esc(c)+'"'+((ing.category||guessCategory(ing.name))===c?' selected':'')+'>'+CAT_ICON[c]+' '+esc(c)+'</option>').join('')+'</select></div></div>';
   });
+  const typeToggle='<label class="fld">Art des Gerichts</label><div class="btnrow" style="margin-bottom:2px">'
+    +'<button class="btn '+(!isF?'primary':'ghost')+' sm" data-action="set-type" data-type="rezept">🍳 Normales Rezept</button>'
+    +'<button class="btn '+(isF?'primary':'ghost')+' sm" data-action="set-type" data-type="fertig">🧊 TK/Fertiggericht</button></div>';
+  const mid=isF
+    ? '<div class="row" style="gap:8px;align-items:flex-end"><div><label class="fld">Im Vorrat (Stück)</label><input id="rec-stock" inputmode="numeric" style="width:110px" value="'+esc(editing.stock||0)+'" /></div><div class="grow" style="font-size:12px;color:var(--muted);padding-bottom:12px">Wie viele hast du im Tiefkühler / Vorrat?</div></div>'
+      +'<label class="fld">Kategorie</label>'+catSelect('rec-cat',editing.category||guessCategory(editing.name)||'Tiefkühl')
+    : '<div class="row" style="gap:8px;align-items:flex-end"><div><label class="fld">Basis-Portionen</label><input id="rec-serv" inputmode="numeric" style="width:96px" value="'+esc(editing.servings||2)+'" /></div><div class="grow" style="font-size:12px;color:var(--muted);padding-bottom:12px">Für wie viele Portionen gelten die Mengen unten?</div></div>';
   openSheet('<header><h2>'+(editing.id?'Gericht bearbeiten':'Neues Gericht')+'</h2><button class="iconbtn" style="background:var(--bg);color:var(--text)" data-action="close-modal">✕</button></header>'
-    +'<div class="body"><label class="fld">Name des Gerichts</label><input id="rec-name" placeholder="z.B. Spaghetti Bolognese" value="'+esc(editing.name)+'" />'
-    +'<div class="row" style="gap:8px;align-items:flex-end"><div><label class="fld">Basis-Portionen</label><input id="rec-serv" inputmode="numeric" style="width:96px" value="'+esc(editing.servings||2)+'" /></div><div class="grow" style="font-size:12px;color:var(--muted);padding-bottom:12px">Für wie viele Portionen gelten die Mengen unten?</div></div>'
-    +'<label class="fld">In welcher App / Quelle? (optional)</label><input id="rec-app" placeholder="z.B. Chefkoch, Kochbuch S. 42, Cookidoo" value="'+esc(editing.app||'')+'" />'
+    +'<div class="body"><label class="fld">Name des Gerichts</label><input id="rec-name" placeholder="'+(isF?'z.B. TK-Pizza Salami':'z.B. Spaghetti Bolognese')+'" value="'+esc(editing.name)+'" />'
+    +typeToggle+mid
+    +'<label class="fld">In welcher App / Quelle? (optional)</label><input id="rec-app" placeholder="z.B. Chefkoch, Tiefkühltruhe, Cookidoo" value="'+esc(editing.app||'')+'" />'
     +'<label class="fld">Link zum Rezept (optional)</label><input id="rec-link" placeholder="https://..." value="'+esc(editing.link||'')+'" />'
     +'<label class="fld">Foto (optional)</label>'
     +(editing.photo?'<img class="photo-preview" src="'+esc(editing.photo)+'" alt="" /><button class="btn ghost sm" data-action="remove-photo" style="margin-top:6px">Foto entfernen</button>':'<input type="file" id="rec-photo" accept="image/*" />')
-    +'<label class="fld" style="margin-top:16px">Zutaten</label>'+rows
-    +'<button class="btn soft sm" style="margin-top:6px" data-action="add-ing">+ Zutat hinzufügen</button></div>'
+    +(isF?'':'<label class="fld" style="margin-top:16px">Zutaten</label>'+rows+'<button class="btn soft sm" style="margin-top:6px" data-action="add-ing">+ Zutat hinzufügen</button>')
+    +'</div>'
     +'<div class="foot"><button class="btn primary" data-action="save-recipe">Speichern</button></div>');
 }
 function collectRecipeModal(){
   const n=document.getElementById('rec-name'); if(n)editing.name=n.value;
   const a=document.getElementById('rec-app'); if(a)editing.app=a.value;
   const sv=document.getElementById('rec-serv'); if(sv)editing.servings=Math.max(1,Math.round(num(sv.value))||1);
+  const stk=document.getElementById('rec-stock'); if(stk)editing.stock=Math.max(0,Math.round(num(stk.value))||0);
+  const ct=document.getElementById('rec-cat'); if(ct)editing.category=ct.value;
   const lk=document.getElementById('rec-link'); if(lk)editing.link=lk.value;
   document.querySelectorAll('.ingrow [data-fld]').forEach(el=>{const i=+el.dataset.i,f=el.dataset.fld;if(editing.ingredients[i])editing.ingredients[i][f]=el.value;});
 }
@@ -565,6 +618,21 @@ function openRecipeActions(id){
 }
 function renderRecipeActions(){
   const r=DB.recipes.find(x=>x.id===actId); if(!r)return;
+  if(r.type==='fertig'){
+    let h='<header><h2>'+esc(r.name)+' 🧊</h2><button class="iconbtn" style="background:var(--bg);color:var(--text)" data-action="close-modal">✕</button></header><div class="body">';
+    if(r.photo)h+='<img class="sheetphoto" src="'+esc(r.photo)+'" alt="" />';
+    if(r.app)h+='<p class="muted" style="margin:0 0 8px">📖 '+esc(r.app)+'</p>';
+    if(r.link)h+='<button class="btn ghost sm" data-action="open-link" data-url="'+esc(r.link)+'" style="margin-bottom:12px">🔗 Öffnen</button>';
+    h+='<label class="fld">Im Vorrat (Stück)</label><div class="portsel"><button data-action="act-stock-dec">−</button><span class="v">'+(r.stock||0)+'</span><button data-action="act-stock-inc">+</button></div>';
+    if((r.stock||0)>0)h+='<p class="rstat ok" style="margin-top:12px">✓ '+(r.stock||0)+' Stück vorrätig – sofort essbar.</p>';
+    else h+='<p class="rstat no" style="margin-top:12px">Nichts mehr da – auf die Einkaufsliste setzen.</p>';
+    h+='</div><div class="foot">'
+      +'<button class="btn '+((r.stock||0)>0?'soft':'ghost')+'" data-action="act-eat">🍽️ Gegessen (−1)</button>'
+      +'<button class="btn primary" data-action="act-restock" style="margin-top:10px">🛒 Auf die Einkaufsliste</button>'
+      +'<div class="btnrow" style="margin-top:10px"><button class="btn ghost sm" data-action="edit-recipe" data-id="'+r.id+'">✏️ Bearbeiten</button>'
+      +'<button class="btn danger sm" data-action="delete-recipe" data-id="'+r.id+'">🗑️ Löschen</button></div>';
+    h+='</div>'; openSheet(h); return;
+  }
   const base=r.servings||2; const factor=actPortions/base; const st=recipeStatus(r,factor);
   let h='<header><h2>'+esc(r.name)+'</h2><button class="iconbtn" style="background:var(--bg);color:var(--text)" data-action="close-modal">✕</button></header><div class="body">';
   if(r.photo)h+='<img class="sheetphoto" src="'+esc(r.photo)+'" alt="" />';
@@ -575,6 +643,13 @@ function renderRecipeActions(){
   if(actPortions!==base)h+='<p class="hint">Mengen werden für '+actPortions+' statt '+base+' Portionen berechnet.</p>';
   if(st.cookable)h+='<p class="rstat ok" style="margin-top:12px">✓ Für '+actPortions+' Portionen ist alles im Vorrat.</p>';
   else h+='<p class="rstat no" style="margin-top:12px">'+st.missing.length+' Zutat(en) fehlen für '+actPortions+' Portionen.</p>';
+  if(!st.cookable&&st.missing.length){
+    h+='<div class="secttl" style="margin:16px 4px 6px">🧺 Fehlende Zutaten</div>';
+    for(const m of st.missing){
+      const q=m.base>0?fmtQty(m.dim,m.base,m.label):'';
+      h+='<div class="item"><div class="grow"><div class="name">'+esc(m.name)+'</div><div class="meta">'+(CAT_ICON[m.category]||'🛍️')+' '+esc(m.category||'Sonstiges')+'</div></div>'+(q?'<span style="font-weight:700;white-space:nowrap">noch '+esc(q)+'</span>':'')+'</div>';
+    }
+  }
   h+='</div><div class="foot">'
     +'<button class="btn primary" data-action="act-shop">🛒 Fehlende Zutaten zum Einkauf</button>'
     +'<button class="btn '+(st.cookable?'soft':'ghost')+'" data-action="act-cook" style="margin-top:10px">🍳 Als gekocht buchen ('+actPortions+' Port.)</button>'
@@ -595,13 +670,38 @@ function compressImage(file,maxDim,cb){
 }
 function openInventoryModal(id){
   const it=DB.inventory.find(x=>x.id===id); if(!it)return;
+  ivEdit={id:it.id,name:it.name,mode:(it.mode==='status'?'status':(it.always?'always':'menge')),have:it.have!==false,amount:it.amount,unit:it.unit||'',category:it.category||guessCategory(it.name)};
+  renderInventoryModal();
+}
+function renderInventoryModal(){
+  const e=ivEdit;
+  const seg='<label class="fld">Wie verfolgen?</label><div class="btnrow" style="margin-bottom:2px">'
+    +'<button class="btn '+(e.mode==='menge'?'primary':'ghost')+' sm" data-action="iv-mode" data-mode="menge">🔢 Menge</button>'
+    +'<button class="btn '+(e.mode==='status'?'primary':'ghost')+' sm" data-action="iv-mode" data-mode="status">✅ Status</button>'
+    +'<button class="btn '+(e.mode==='always'?'primary':'ghost')+' sm" data-action="iv-mode" data-mode="always">⭐ Immer</button></div>';
+  let body='<label class="fld">Name</label><input id="iv-name" value="'+esc(e.name)+'" />'+seg;
+  if(e.mode==='status'){
+    body+='<p class="hint" style="margin-top:8px">Kein Zählen – du schaltest selbst zwischen „vorhanden" und „nachkaufen".</p>'
+      +'<label class="fld">Aktueller Stand</label><div class="btnrow">'
+      +'<button class="btn '+(e.have?'soft':'ghost')+' sm" data-action="iv-have" data-have="1">✅ vorhanden</button>'
+      +'<button class="btn '+(!e.have?'soft':'ghost')+' sm" data-action="iv-have" data-have="0">🛒 nachkaufen</button></div>';
+  } else if(e.mode==='always'){
+    body+='<p class="hint" style="margin-top:8px">Grundzutat – zählt immer als vorhanden und kommt nie auf die Einkaufsliste.</p>';
+  } else {
+    body+='<div class="row" style="gap:8px;align-items:flex-end"><div class="grow"><label class="fld">Menge</label><input id="iv-amt" inputmode="decimal" value="'+esc(e.amount)+'" /></div>'
+      +'<div><label class="fld">Einheit</label>'+unitSelect('iv-unit',e.unit)+'</div></div>';
+  }
+  body+='<label class="fld">Kategorie</label>'+catSelect('iv-cat',e.category||guessCategory(e.name));
   openSheet('<header><h2>Vorrat bearbeiten</h2><button class="iconbtn" style="background:var(--bg);color:var(--text)" data-action="close-modal">✕</button></header>'
-    +'<div class="body"><label class="fld">Name</label><input id="iv-name" value="'+esc(it.name)+'" />'
-    +'<div class="row" style="gap:8px;align-items:flex-end"><div class="grow"><label class="fld">Menge</label><input id="iv-amt" inputmode="decimal" value="'+esc(it.amount)+'" '+(it.always?'disabled':'')+'/></div>'
-    +'<div><label class="fld">Einheit</label>'+unitSelect('iv-unit',it.unit)+'</div></div>'
-    +'<label class="fld">Kategorie</label>'+catSelect('iv-cat',it.category||guessCategory(it.name))
-    +'<label class="row" style="margin-top:16px;gap:10px;cursor:pointer"><input type="checkbox" id="iv-always" style="width:22px;height:22px" '+(it.always?'checked':'')+'/><span>Immer vorhanden (Grundzutat – nie auf der Einkaufsliste)</span></label></div>'
-    +'<div class="foot"><button class="btn primary" data-action="save-inventory" data-id="'+it.id+'">Speichern</button></div>');
+    +'<div class="body">'+body+'</div>'
+    +'<div class="foot"><button class="btn primary" data-action="save-inventory" data-id="'+e.id+'">Speichern</button></div>');
+}
+function collectInvModal(){
+  if(!ivEdit)return;
+  const n=document.getElementById('iv-name'); if(n)ivEdit.name=n.value;
+  const a=document.getElementById('iv-amt'); if(a)ivEdit.amount=num(a.value);
+  const u=document.getElementById('iv-unit'); if(u)ivEdit.unit=u.value;
+  const c=document.getElementById('iv-cat'); if(c)ivEdit.category=c.value;
 }
 
 function openShopModal(id){
@@ -651,6 +751,13 @@ document.addEventListener('click',e=>{
 
     /* Gerichte */
     case 'recipe-actions': openRecipeActions(id); break;
+    case 'stock-inc': {const r=DB.recipes.find(x=>x.id===id);if(r){r.stock=(r.stock||0)+1;save();render();}} break;
+    case 'stock-dec': {const r=DB.recipes.find(x=>x.id===id);if(r&&(r.stock||0)>0){r.stock--;save();render();}} break;
+    case 'act-stock-inc': {const r=DB.recipes.find(x=>x.id===actId);if(r){r.stock=(r.stock||0)+1;save();renderRecipeActions();}} break;
+    case 'act-stock-dec': {const r=DB.recipes.find(x=>x.id===actId);if(r&&(r.stock||0)>0){r.stock--;save();renderRecipeActions();}} break;
+    case 'act-eat': {const r=DB.recipes.find(x=>x.id===actId);if(r){if((r.stock||0)>0)r.stock--;save();closeSheet();toast('Guten Appetit – Vorrat aktualisiert ✓');}} break;
+    case 'act-restock': {const r=DB.recipes.find(x=>x.id===actId);if(r){mergeShopping(r.name,'count',1,'Stück',r.category||'Tiefkühl');save();closeSheet();tab='einkauf';render();toast('Auf die Einkaufsliste ✓');}} break;
+    case 'set-type': collectRecipeModal(); editing.type=t.dataset.type; if(editing.type==='fertig'){editing.servings=1;if(typeof editing.stock!=='number')editing.stock=0;if(!editing.category)editing.category=guessCategory(editing.name)||'Tiefkühl';} renderRecipeModal(); break;
     case 'act-port-inc': actPortions++; renderRecipeActions(); break;
     case 'act-port-dec': if(actPortions>1)actPortions--; renderRecipeActions(); break;
     case 'act-shop': {const r=DB.recipes.find(x=>x.id===actId);const f=actPortions/((r&&r.servings)||1);const n=addRecipeToShopping(actId,f);save();closeSheet();n>0?toast(n+' Zutat(en) zur Einkaufsliste ✓'):toast('Schon alles im Vorrat 🙂');} break;
@@ -668,7 +775,10 @@ document.addEventListener('click',e=>{
     case 'edit-inventory': openInventoryModal(id); break;
     case 'save-inventory': saveInventory(id); break;
     case 'delete-inventory': if(confirm('Aus dem Vorrat entfernen?')){DB.inventory=DB.inventory.filter(x=>x.id!==id);save();render();} break;
-    case 'toggle-always': {const it=DB.inventory.find(x=>x.id===id);if(it){it.always=!it.always;save();render();}} break;
+    case 'toggle-always': {const it=DB.inventory.find(x=>x.id===id);if(it&&it.mode!=='status'){it.always=!it.always;save();render();}} break;
+    case 'status-toggle': {const it=DB.inventory.find(x=>x.id===id);if(it&&it.mode==='status'){it.have=!it.have;if(!it.have){mergeShopping(it.name,'count',0,'',it.category||guessCategory(it.name));toast('„'+it.name+'" auf die Einkaufsliste ✓');}else{DB.shopping=DB.shopping.filter(s=>matchKey(s.name)!==matchKey(it.name));toast('„'+it.name+'" als vorhanden ✓');}save();render();}} break;
+    case 'iv-mode': collectInvModal(); ivEdit.mode=t.dataset.mode; renderInventoryModal(); break;
+    case 'iv-have': collectInvModal(); ivEdit.have=t.dataset.have==='1'; renderInventoryModal(); break;
 
     /* Einkauf */
     case 'shop-add': shopAdd(); break;
@@ -708,29 +818,38 @@ function focusQuickAdd(){const el=document.getElementById('qa-name');if(el)el.fo
 function saveRecipe(){
   collectRecipeModal();
   const name=(editing.name||'').trim(); if(!name){alert('Bitte gib dem Gericht einen Namen.');return;}
+  const app=(editing.app||'').trim();
+  const link=(editing.link||'').trim();
+  const photo=editing.photo||'';
+  if(editing.type==='fertig'){
+    const stock=Math.max(0,Math.round(num(editing.stock))||0);
+    const category=editing.category||guessCategory(name)||'Tiefkühl';
+    if(editing.id){const r=DB.recipes.find(x=>x.id===editing.id);r.name=name;r.app=app;r.link=link;r.photo=photo;r.type='fertig';r.stock=stock;r.category=category;r.servings=1;r.ingredients=[];}
+    else DB.recipes.push({id:uid(),name,app,type:'fertig',stock,category,servings:1,link,photo,ingredients:[]});
+    save();closeSheet();tab='gerichte';render();return;
+  }
   const ings=editing.ingredients.filter(i=>i.name&&i.name.trim()).map(i=>({name:i.name.trim(),amount:num(i.amount),unit:(i.unit||'').trim(),category:i.category||guessCategory(i.name)}));
   if(!ings.length){alert('Bitte füge mindestens eine Zutat hinzu.');return;}
   const servings=Math.max(1,Math.round(num(editing.servings))||1);
-  const link=(editing.link||'').trim();
-  const photo=editing.photo||'';
-  if(editing.id){const r=DB.recipes.find(x=>x.id===editing.id);r.name=name;r.app=(editing.app||'').trim();r.servings=servings;r.link=link;r.photo=photo;r.ingredients=ings;}
-  else DB.recipes.push({id:uid(),name,app:(editing.app||'').trim(),servings,link,photo,ingredients:ings});
+  if(editing.id){const r=DB.recipes.find(x=>x.id===editing.id);r.name=name;r.app=app;r.servings=servings;r.link=link;r.photo=photo;r.ingredients=ings;r.type='rezept';delete r.stock;}
+  else DB.recipes.push({id:uid(),name,app,type:'rezept',servings,link,photo,ingredients:ings});
   save();closeSheet();tab='gerichte';render();
 }
 function quickAddInventory(){
   const name=(document.getElementById('qa-name').value||'').trim(); if(!name){document.getElementById('qa-name').focus();return;}
   const amount=num(document.getElementById('qa-amt').value); const unit=(document.getElementById('qa-unit').value||'').trim();
-  const ex=DB.inventory.find(x=>!x.always&&normName(x.name)===normName(name)&&(x.unit||'')===unit);
+  const ex=DB.inventory.find(x=>!x.always&&matchKey(x.name)===matchKey(name)&&(x.unit||'')===unit);
   if(ex)ex.amount=num(ex.amount)+amount; else DB.inventory.push({id:uid(),name,amount,unit,category:guessCategory(name),always:false});
   save();render();toast('Zum Vorrat hinzugefügt ✓');
 }
 function saveInventory(id){
   const it=DB.inventory.find(x=>x.id===id); if(!it)return;
-  it.name=(document.getElementById('iv-name').value||'').trim()||it.name;
-  it.always=document.getElementById('iv-always').checked;
-  it.amount=num(document.getElementById('iv-amt').value);
-  it.unit=(document.getElementById('iv-unit').value||'').trim();
-  it.category=document.getElementById('iv-cat').value;
+  collectInvModal();
+  it.name=(ivEdit.name||'').trim()||it.name;
+  it.category=ivEdit.category||guessCategory(it.name);
+  if(ivEdit.mode==='status'){it.mode='status';it.always=false;it.have=ivEdit.have!==false;}
+  else if(ivEdit.mode==='always'){it.mode='menge';it.always=true;delete it.have;}
+  else{it.mode='menge';it.always=false;it.amount=num(ivEdit.amount);it.unit=(ivEdit.unit||'').trim();delete it.have;}
   save();closeSheet();render();
 }
 function shopAdd(){
@@ -750,10 +869,17 @@ function boughtItem(id){
   const it=DB.shopping.find(x=>x.id===id); if(!it)return;
   const snapshot={...it};
   DB.shopping=DB.shopping.filter(x=>x.id!==id);
-  addToInventory(it.name,it.dim,it.base,it.label,it.category);
+  const stat=DB.inventory.find(x=>x.mode==='status'&&matchKey(x.name)===matchKey(it.name));
+  const fr=DB.recipes.find(r=>r.type==='fertig'&&matchKey(r.name)===matchKey(it.name));
+  const qty=Math.max(1,Math.round(it.base||1));
+  if(stat) stat.have=true;
+  else if(fr) fr.stock=(fr.stock||0)+qty;
+  else addToInventory(it.name,it.dim,it.base,it.label,it.category);
   save();render();
-  toast('„'+it.name+'" in den Vorrat ✓',()=>{
-    subtractFromInventory(normName(snapshot.name),snapshot.dim,snapshot.base);
+  toast('„'+it.name+'" '+(stat?'als vorhanden markiert':fr?'wieder vorrätig':'in den Vorrat')+' ✓',()=>{
+    if(stat) stat.have=false;
+    else if(fr) fr.stock=Math.max(0,(fr.stock||0)-qty);
+    else subtractFromInventory(matchKey(snapshot.name),snapshot.dim,snapshot.base);
     DB.shopping.push(snapshot); save(); render();
   });
 }
@@ -779,17 +905,18 @@ function planPort(ds,eid,delta){
 function weekToShopping(){
   const start=parseYmd(DB.ui.weekStart);
   // 1) Gesamtbedarf der Woche je Artikel aufsummieren (über alle noch nicht gekochten Gerichte)
-  const need={};
+  const need={}; const fertigNeed={};
   for(let i=0;i<7;i++){
     const ds=ymd(addDays(start,i));
     for(const e of (DB.week[ds]||[])){
       if(e.cooked)continue;
       const r=DB.recipes.find(x=>x.id===e.recipeId); if(!r)continue;
+      if(r.type==='fertig'){fertigNeed[r.id]=(fertigNeed[r.id]||0)+Math.max(1,Math.round(e.portions||1));continue;}
       const f=(e.portions||r.servings||1)/(r.servings||1);
       for(const ing of r.ingredients){
         if(!ing.name||!ing.name.trim())continue;
         const tb=toBase(ing.amount,ing.unit); const dim=tb.dim, base=tb.base*f; if(base<=0)continue;
-        const nn=normName(ing.name), key=nn+'|'+dim;
+        const nn=matchKey(ing.name), key=nn+'|'+dim;
         if(!need[key])need[key]={name:ing.name.trim(),nname:nn,dim,base:0,label:(ing.unit||'').trim(),category:ing.category||guessCategory(ing.name)};
         need[key].base+=base;
       }
@@ -803,6 +930,12 @@ function weekToShopping(){
     const avail=Math.max(0,(map[key]||0)-shopOnList(n.nname,n.dim));
     const miss=n.base-avail;
     if(miss>0.0001){ mergeShopping(n.name,n.dim,miss,n.label,n.category); added++; }
+  }
+  for(const rid in fertigNeed){
+    const r=DB.recipes.find(x=>x.id===rid); if(!r)continue;
+    const avail=Math.max(0,(r.stock||0)-shopOnList(matchKey(r.name),'count'));
+    const miss=fertigNeed[rid]-avail;
+    if(miss>0.0001){ mergeShopping(r.name,'count',miss,'Stück',r.category||'Tiefkühl'); added++; }
   }
   save();
   if(added>0){tab='einkauf';render();toast(added+' Zutat(en) zur Einkaufsliste ✓');}
