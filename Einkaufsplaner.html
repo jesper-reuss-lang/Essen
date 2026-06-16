@@ -212,20 +212,24 @@ function formatFromBase(dim,base,label){
 function fmtQty(dim,base,label){const r=formatFromBase(dim,base,label);return fmtNum(r.amount)+(r.unit?' '+r.unit:'');}
 
 /* ===================== Kategorien ===================== */
-const CATEGORIES=['Obst & Gemüse','Brot & Backwaren','Milchprodukte & Eier','Fleisch & Fisch','Tiefkühl','Vorratsschrank','Getränke','Süßes & Snacks','Sonstiges'];
-const CAT_ICON={'Obst & Gemüse':'🥦','Brot & Backwaren':'🥖','Milchprodukte & Eier':'🧀','Fleisch & Fisch':'🍖','Tiefkühl':'🧊','Vorratsschrank':'🥫','Getränke':'🧃','Süßes & Snacks':'🍫','Sonstiges':'🛍️'};
+const CATEGORIES=['Obst & Gemüse','Brot & Backwaren','Milchprodukte & Eier','Fleisch & Fisch','Tiefkühl','Nudeln, Reis & Getreide','Konserven & Hülsenfrüchte','Öle, Essig & Saucen','Gewürze & Kräuter','Vorratsschrank','Getränke','Süßes & Snacks','Sonstiges'];
+const CAT_ICON={'Obst & Gemüse':'🥦','Brot & Backwaren':'🥖','Milchprodukte & Eier':'🧀','Fleisch & Fisch':'🍖','Tiefkühl':'🧊','Nudeln, Reis & Getreide':'🍝','Konserven & Hülsenfrüchte':'🥫','Öle, Essig & Saucen':'🫒','Gewürze & Kräuter':'🧂','Vorratsschrank':'📦','Getränke':'🧃','Süßes & Snacks':'🍫','Sonstiges':'🛍️'};
 const CAT_KEYWORDS={
-  'Obst & Gemüse':['tomate','gurke','zwiebel','knoblauch','paprika','karotte','möhre','salat','kartoffel','apfel','banane','zitrone','limette','ingwer','brokkoli','spinat','pilz','champignon','lauch','sellerie','kohl','zucchini','aubergine','avocado','beere','orange','birne','traube','petersilie','basilikum','kräuter','chili','porree','rucola','mais','spargel'],
-  'Brot & Backwaren':['brot','brötchen','baguette','toast','semmel','croissant','wrap','tortilla','fladen'],
-  'Milchprodukte & Eier':['milch','butter','käse','feta','quark','joghurt','sahne','schmand','eier','ei','frischkäse','mozzarella','parmesan','margarine'],
-  'Fleisch & Fisch':['hack','fleisch','hähnchen','hühn','huhn','pute','rind','schwein','speck','schinken','wurst','salami','fisch','lachs','thunfisch','garnele','bacon','steak','filet'],
-  'Tiefkühl':['tiefkühl','gefroren','pommes'],
-  'Vorratsschrank':['nudel','spaghetti','pasta','reis','mehl','zucker','salz','pfeffer','öl','essig','tomatenmark','dose','konserve','linse','bohne','kichererbse','gewürz','curry','brühe','soße','sauce','kokosmilch','honig','senf','ketchup','haferflocken','müsli','couscous','passierte','oliven','mandel','nuss'],
-  'Getränke':['wasser','saft','cola','limo','bier','wein','kaffee','tee','sprudel','schorle'],
-  'Süßes & Snacks':['schokolade','keks','chips','bonbon','gummi','riegel','kuchen','marmelade','nutella','eis']
+  'Obst & Gemüse':['tomate','gurke','zwiebel','knoblauch','paprika','karotte','möhre','salat','kartoffel','apfel','banane','zitrone','limette','ingwer','brokkoli','spinat','pilz','champignon','lauch','sellerie','kohl','zucchini','aubergine','avocado','beere','orange','birne','traube','porree','rucola','mais','spargel','gemüse','obst','feldsalat','kopfsalat','radieschen','fenchel','melone','wassermelone','honigmelone'],
+  'Brot & Backwaren':['brot','brötchen','baguette','toast','semmel','croissant','wrap','tortilla','fladen','knäcke','brezel','zwieback'],
+  'Milchprodukte & Eier':['milch','butter','käse','feta','quark','joghurt','sahne','schmand','eier','ei','frischkäse','mozzarella','parmesan','margarine','buttermilch','crème fraîche','creme fraiche'],
+  'Fleisch & Fisch':['hack','fleisch','hähnchen','hühn','huhn','pute','rind','schwein','speck','schinken','wurst','salami','fisch','lachs','thunfisch','garnele','bacon','steak','filet','gyros','frikadelle','mett','würstchen'],
+  'Tiefkühl':['tiefkühl','gefroren','pommes','tk-pizza','tk-gemüse'],
+  'Nudeln, Reis & Getreide':['nudel','spaghetti','pasta','makkaroni','penne','fusilli','spirelli','tortellini','tagliatelle','lasagne','gnocchi','spätzle','reis','basmati','risotto','mehl','couscous','bulgur','quinoa','polenta','grieß','griess','haferflocken','hafer','müsli','cornflakes','porridge','getreide','graupen','hirse'],
+  'Konserven & Hülsenfrüchte':['dose','konserve','linse','bohne','kichererbse','kidneybohne','erbse','passierte tomaten','gehackte tomaten','dosentomaten','passata','kokosmilch','tomatenkonserve'],
+  'Öle, Essig & Saucen':['öl','olivenöl','rapsöl','sonnenblumenöl','kokosöl','sesamöl','speiseöl','essig','balsamico','sojasauce','sojasoße','sauce','soße','ketchup','senf','mayonnaise','mayo','pesto','tomatenmark','brühe','fond','dressing','worcester'],
+  'Gewürze & Kräuter':['salz','pfeffer','paprikapulver','currypulver','curry','currypaste','kreuzkümmel','kümmel','muskat','muskatnuss','zimt','chili','chilipulver','cayenne','kurkuma','knoblauchpulver','zwiebelpulver','ingwerpulver','oregano','thymian','rosmarin','majoran','basilikum','petersilie','schnittlauch','dill','koriander','minze','salbei','lorbeer','kräuter','kresse','gewürz','vanille'],
+  'Vorratsschrank':['zucker','honig','oliven','mandel','nuss','backpulver','hefe','speisestärke','stärke','kakao','rosine','sirup'],
+  'Getränke':['wasser','saft','cola','limo','bier','wein','kaffee','tee','sprudel','schorle','smoothie'],
+  'Süßes & Snacks':['schokolade','keks','chips','bonbon','gummi','riegel','kuchen','marmelade','nutella','eis','waffel','cracker','popcorn','praline']
 };
 function kwMatch(name,kw){if(kw.length>=4)return name.includes(kw);return new RegExp('(^|[^a-zäöüß])'+kw+'([^a-zäöüß]|$)').test(name);}
-function guessCategory(name){const n=normName(name);for(const cat of CATEGORIES){const ks=CAT_KEYWORDS[cat];if(!ks)continue;for(const kw of ks)if(kwMatch(n,kw))return cat;}return 'Sonstiges';}
+function guessCategory(name){const n=normName(name);const ph=n.includes(' ');let best='Sonstiges',bestScore=-1;for(const cat of CATEGORIES){const ks=CAT_KEYWORDS[cat];if(!ks)continue;for(const kw of ks){if(!kwMatch(n,kw))continue;const tail=kw.length>=4&&n.endsWith(kw)&&(!ph||kw.includes(' '));const score=kw.length+(tail?1000:0);if(score>bestScore){best=cat;bestScore=score;}}}return best;}
 
 /* ===================== Utils ===================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
@@ -233,7 +237,7 @@ function num(v){if(typeof v==='number')return v;if(v==null||v==='')return 0;retu
 function round(n){return Math.round((n+Number.EPSILON)*100)/100;}
 function fmtNum(n){return Number(n).toLocaleString('de-DE',{maximumFractionDigits:2});}
 function normName(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
-function matchKey(s){
+function baseKey(s){
   let x=(s||'').toLowerCase().replace(/\([^)]*\)/g,' ');
   x=x.replace(/ß/g,'ss').replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u');
   x=x.replace(/\b(frische?[rsn]?|getrocknete?[rsn]?|gemahlene?[rsn]?|geriebene?[rsn]?|gehackte?[rsn]?|gerebelte?[rsn]?|gerostete?[rsn]?|gesalzene?[rsn]?|geschnittene?[rsn]?|gewurfelte?[rsn]?|gestiftelte?[rsn]?|abgetropfte?[rsn]?|blanchierte?[rsn]?|geschalte?[rsn]?|rote[rsn]?|grune[rsn]?|gelbe[rsn]?|schwarze[rsn]?|weisse[rsn]?|braune[rsn]?|feine[rsn]?|grobe[rsn]?|kleine[rsn]?|grosse[rsn]?|ganze[rsn]?|natur|edelsuess|rosenscharf|konserviert|tiefkuhl|bio)\b/g,' ');
@@ -241,6 +245,30 @@ function matchKey(s){
   x=x.replace(/(blattern|blatter|blatt)$/,'');
   return x;
 }
+/* Eingebaute Synonyme: Wortstamm-Ersetzung in baseKey-Form (nur a-z, Umlaute aufgelöst).
+   Nur der Stamm wird getauscht, damit auch Zusammensetzungen greifen
+   (huhner->huhn  =>  Hähnchenbrust = Hühnerbrust, Hühnerbrühe = Geflügelbouillon). */
+const BUILTIN_SYN=[
+  ['hahnchen','huhn'],['haehnchen','huhn'],['huhnchen','huhn'],['huehnchen','huhn'],['huhner','huhn'],['huehner','huhn'],['gefluegel','huhn'],['geflugel','huhn'],['poularde','huhn'],['poulet','huhn'],
+  ['bouillon','bruhe'],['fond','bruhe'],
+  ['obers','sahne'],['rahm','sahne'],
+  ['topfen','quark'],['erdapfel','kartoffel'],['marille','aprikose'],['karfiol','blumenkohl'],
+  ['faschiertes','hackfleisch'],['paradeiser','tomate']
+].sort((a,b)=>b[0].length-a[0].length);
+const BUILTIN_SYN_LABELS='Hähnchen = Hühner = Geflügel = Poulet · Brühe = Bouillon = Fond · Sahne = Obers = Rahm · Quark = Topfen · Kartoffel = Erdapfel · Aprikose = Marille · Blumenkohl = Karfiol · Hackfleisch = Faschiertes · Tomate = Paradeiser';
+function applyBuiltinSyn(x){for(const r of BUILTIN_SYN){if(x.indexOf(r[0])>=0)x=x.split(r[0]).join(r[1]);}return x;}
+let USER_EXACT={};
+function rebuildUserSyn(groups){
+  USER_EXACT={};
+  (groups||[]).forEach(grp=>{
+    if(!Array.isArray(grp))return;
+    const keys=grp.map(n=>applyBuiltinSyn(baseKey(n))).filter(Boolean);
+    if(keys.length<2)return;
+    const canon=keys[0];
+    for(let i=1;i<keys.length;i++){if(keys[i]&&keys[i]!==canon)USER_EXACT[keys[i]]=canon;}
+  });
+}
+function matchKey(s){const x=applyBuiltinSyn(baseKey(s));return USER_EXACT[x]||x;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function pad(n){return String(n).padStart(2,'0');}
 function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -270,18 +298,19 @@ function exampleData(){
   wk[ymd(addDays(t,1))]=[{id:uid(),recipeId:rCurry.id,cooked:false,portions:rCurry.servings},{id:uid(),recipeId:rSalat.id,cooked:false,portions:rSalat.servings}];
   return {
     v:2,
+    synonyms:[],
     recipes:[rBolo,rCurry,rEi,rSalat,rPizza],
     inventory:[
-      {id:uid(),name:'Spaghetti',amount:500,unit:'g',category:'Vorratsschrank',always:false},
-      {id:uid(),name:'Reis',amount:1,unit:'kg',category:'Vorratsschrank',always:false},
+      {id:uid(),name:'Spaghetti',amount:500,unit:'g',category:'Nudeln, Reis & Getreide',always:false},
+      {id:uid(),name:'Reis',amount:1,unit:'kg',category:'Nudeln, Reis & Getreide',always:false},
       {id:uid(),name:'Zwiebel',mode:'status',have:true,category:'Obst & Gemüse',always:false},
       {id:uid(),name:'Knoblauch',amount:5,unit:'Zehe',category:'Obst & Gemüse',always:false},
       {id:uid(),name:'Eier',amount:6,unit:'Stück',category:'Milchprodukte & Eier',always:false},
       {id:uid(),name:'Butter',amount:250,unit:'g',category:'Milchprodukte & Eier',always:false},
       {id:uid(),name:'Brot',amount:8,unit:'Scheibe',category:'Brot & Backwaren',always:false},
       {id:uid(),name:'Tomaten',mode:'status',have:true,category:'Obst & Gemüse',always:false},
-      {id:uid(),name:'Salz',amount:0,unit:'',category:'Vorratsschrank',always:true},
-      {id:uid(),name:'Olivenöl',amount:0,unit:'',category:'Vorratsschrank',always:true}
+      {id:uid(),name:'Salz',amount:0,unit:'',category:'Gewürze & Kräuter',always:true},
+      {id:uid(),name:'Olivenöl',amount:0,unit:'',category:'Öle, Essig & Saucen',always:true}
     ],
     shopping:[],
     week:wk,
@@ -292,6 +321,7 @@ function exampleData(){
 /* ===================== State / Persistenz ===================== */
 const KEY='einkaufsplaner_v2', KEY1='einkaufsplaner_v1';
 let DB=loadDB();
+rebuildUserSyn(DB.synonyms);
 let tab='gerichte';
 let editing=null;
 let ivEdit=null;
@@ -299,6 +329,7 @@ let actId=null, actPortions=2;
 
 function normalizeDB(d){
   d.v=2; d.recipes=d.recipes||[]; d.inventory=d.inventory||[]; d.shopping=d.shopping||[]; d.week=d.week||{}; d.ui=d.ui||{};
+  d.synonyms=Array.isArray(d.synonyms)?d.synonyms.filter(g=>Array.isArray(g)&&g.filter(x=>x&&String(x).trim()).length>=2):[];
   d.recipes.forEach(r=>{r.id=r.id||uid();r.app=r.app||'';r.link=r.link||'';r.photo=r.photo||'';r.servings=r.servings||2;r.ingredients=r.ingredients||[];
     r.type=(r.type==='fertig')?'fertig':'rezept';
     if(r.type==='fertig'){r.stock=Math.max(0,Math.round(num(r.stock))||0);r.category=r.category||guessCategory(r.name);r.servings=1;r.ingredients=[];}});
@@ -307,6 +338,7 @@ function normalizeDB(d){
     if(i.mode==='status'){i.always=false;if(typeof i.have!=='boolean')i.have=true;}});
   d.shopping.forEach(s=>{s.id=s.id||uid();});
   for(const k in d.week){(d.week[k]||[]).forEach(e=>{e.id=e.id||uid();if(!e.portions){const r=d.recipes.find(x=>x.id===e.recipeId);e.portions=(r&&r.servings)||2;}});}
+  rebuildUserSyn(d.synonyms);
   return d;
 }
 function loadDB(){
@@ -728,11 +760,28 @@ function openDayPicker(ds){
     +'<div class="foot"><button class="btn primary" data-action="close-modal">Fertig</button></div>');
 }
 
+function synSectionHtml(){
+  const groups=DB.synonyms||[];
+  let list;
+  if(!groups.length){
+    list='<p class="hint" style="margin:6px 0">Noch keine eigenen Synonyme. Beispiel: <em>Hähnchenbrust = Hühnerbrust</em></p>';
+  }else{
+    list=groups.map((g,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="flex:1">'+g.map(esc).join(' <span class="muted">=</span> ')+'</span><button class="iconbtn" data-action="syn-remove" data-i="'+i+'" title="Entfernen" style="background:var(--bg);color:var(--text)">🗑️</button></div>').join('');
+  }
+  return '<div class="divider"></div>'
+    +'<h3 style="margin:6px 0 2px;font-size:15px">🔗 Synonyme (gleiche Zutat, andere Namen)</h3>'
+    +'<p class="muted" style="margin:0 0 8px">Werden beim Abgleich von Vorrat &amp; Einkaufsliste als dasselbe behandelt.</p>'
+    +list
+    +'<div style="display:flex;gap:8px;margin-top:10px"><input id="syn-input" type="text" placeholder="z. B. Hähnchenbrust = Hühnerbrust" style="flex:1;min-width:0;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--text)" /><button class="btn soft" data-action="syn-add" style="width:auto;white-space:nowrap">Hinzufügen</button></div>'
+    +'<p class="hint" style="margin:6px 0 0">Mehrere Namen mit Komma oder „=" trennen.</p>'
+    +'<details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Automatisch erkannte Synonyme</summary><p class="hint" style="margin:6px 0">'+BUILTIN_SYN_LABELS+'</p></details>';
+}
 function openSettings(){
   openSheet('<header><h2>⚙️ Daten & Einstellungen</h2><button class="iconbtn" style="background:var(--bg);color:var(--text)" data-action="close-modal">✕</button></header>'
     +'<div class="body"><p class="muted" style="margin-top:0">Deine Daten liegen nur auf diesem Gerät. Mit Export sicherst du sie oder überträgst sie auf ein anderes Gerät.</p>'
     +'<button class="btn soft" data-action="export-data">⬇️ Daten exportieren (Backup)</button>'
     +'<button class="btn ghost" style="margin-top:10px" data-action="import-data">⬆️ Daten importieren</button>'
+    +synSectionHtml()
     +'<div class="divider"></div>'
     +'<button class="btn ghost" data-action="load-examples">🔄 Beispieldaten neu laden</button>'
     +'<button class="btn danger" style="margin-top:10px" data-action="clear-all">🗑️ Alles löschen</button>'
@@ -804,8 +853,21 @@ document.addEventListener('click',e=>{
     /* Settings */
     case 'export-data': exportData(); break;
     case 'import-data': document.getElementById('import-file').click(); break;
-    case 'load-examples': if(confirm('Beispieldaten laden? Aktuelle Daten werden ersetzt.')){DB=exampleData();save();closeSheet();tab='gerichte';render();} break;
-    case 'clear-all': if(confirm('Wirklich ALLE Daten löschen?')){DB={v:2,recipes:[],inventory:[],shopping:[],week:{},ui:{}};save();closeSheet();tab='gerichte';render();} break;
+    case 'syn-add': {
+      const el=document.getElementById('syn-input'); const raw=el?el.value:'';
+      const parts=raw.split(/[=,;\/]+/).map(s=>s.trim()).filter(Boolean);
+      const uniq=[...new Set(parts)];
+      if(uniq.length<2){alert('Bitte mindestens zwei Namen angeben, getrennt mit Komma oder „=".\nBeispiel: Hähnchenbrust = Hühnerbrust');break;}
+      DB.synonyms=DB.synonyms||[]; DB.synonyms.push(uniq);
+      rebuildUserSyn(DB.synonyms); save(); openSettings(); toast('Synonym gespeichert ✓'); break;
+    }
+    case 'syn-remove': {
+      const i=+t.dataset.i;
+      if(DB.synonyms&&i>=0&&i<DB.synonyms.length){DB.synonyms.splice(i,1);rebuildUserSyn(DB.synonyms);save();openSettings();}
+      break;
+    }
+    case 'load-examples': if(confirm('Beispieldaten laden? Aktuelle Daten werden ersetzt.')){DB=exampleData();rebuildUserSyn(DB.synonyms);save();closeSheet();tab='gerichte';render();} break;
+    case 'clear-all': if(confirm('Wirklich ALLE Daten löschen?')){DB={v:2,synonyms:[],recipes:[],inventory:[],shopping:[],week:{},ui:{}};rebuildUserSyn(DB.synonyms);save();closeSheet();tab='gerichte';render();} break;
   }
 });
 document.addEventListener('change',e=>{
