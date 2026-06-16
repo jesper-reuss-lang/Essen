@@ -1025,7 +1025,24 @@ function toast(msg,undoFn){
   el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),undoFn?4000:1800);
 }
 
+/* ---- Zurück-Knopf (Android/Browser): einen Schritt zurück statt App schließen ----
+   1) offenes Fenster/Dialog schließen  2) sonst zurück zum Start-Tab „Gerichte"
+   3) sonst in der App bleiben (kein versehentliches Schließen).
+   Technik: Ein „Guard"-Verlaufseintrag fängt das Zurück-Tippen ab und wird nach
+   jedem Schritt neu gesetzt, damit der nächste Zurück-Druck wieder ankommt. */
+let __backReady=false;
+function __armBack(){try{if(!history.state||!history.state.__g)history.pushState({__g:1},'');}catch(e){}}
+function __initBack(){try{history.replaceState({__b:1},'');__armBack();__backReady=true;}catch(e){}}
+window.addEventListener('popstate',function(){
+  if(!__backReady)return;
+  const root=document.getElementById('modalRoot');
+  if(root&&root.classList.contains('show')){closeSheet();__armBack();return;}
+  if(tab!=='gerichte'){tab='gerichte';render();__armBack();return;}
+  __armBack();
+});
+
 render();
+__initBack();
 </script>
 <script>
 /* PWA: Service Worker registrieren (für Offline-Betrieb & Installierbarkeit) */
